@@ -11,20 +11,31 @@ namespace AdventOfCode2019Day2
     {
         static void Main(string[] args)
         {
-            var input = new List<int>();
+            var inputPart1 = new List<int>();
             try
             {
                 using (StreamReader sr = new StreamReader("input.txt"))
                 {
-                    string strProgram;
+                    string? strProgram;
                     while ((strProgram = sr.ReadLine()) != null)
                     {
-                        input = strProgram.Split(',').Select(int.Parse).ToList();
+                        inputPart1 = strProgram.Split(',').Select(int.Parse).ToList();
                     }
-
-                    RestoreProgramState(ref input);
-                    ProcessIntCodeProgram(ref input);
-                    Console.WriteLine($"Part 1: The value left at position 0 is {input[0]}.");
+                    var inputPart2 = CopyIntProgram(in inputPart1);
+                    // Get Part 1 Answer
+                    SetNounAndVerb(ref inputPart1);
+                    ProcessIntCodeProgram(ref inputPart1);
+                    Console.WriteLine($"Part 1: The value left at position 0 is {inputPart1[0]}.");
+                    // Get Part2 Answer
+                    Tuple<int, int>? nounAndVerb = FindNounAndVerb(ref inputPart2);
+                    if (nounAndVerb != null)
+                    {
+                        Console.WriteLine($"Part 2: The noun is {nounAndVerb.Item1}.\nThe verb is {nounAndVerb.Item2}.\n100 * noun + verb = {100 * nounAndVerb.Item1 + nounAndVerb.Item2}.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Could not find the noun and verb for that target.");
+                    }
                 }
             }
             catch (IOException e)
@@ -56,7 +67,7 @@ namespace AdventOfCode2019Day2
             }
         }
 
-        static void PrintIntCodeProgram(List<int> program)
+        static void PrintIntCodeProgram(in List<int> program)
         {
             for (int i = 0; i < program.Count; i++)
             {
@@ -66,13 +77,48 @@ namespace AdventOfCode2019Day2
                 }
                 Console.Write($"{program[i]},");
             }
+            Console.WriteLine();
         }
 
-        static void RestoreProgramState(ref List<int> program)
+        static void SetNounAndVerb(ref List<int> program, int noun = 12, int verb = 2)
         {
-            // before running the program, replace position 1 with the value 12 and replace position 2 with the value 2.
-            program[1] = 12;
-            program[2] = 2;
+            program[1] = noun;
+            program[2] = verb;
+        }
+
+        static Tuple<int, int>? FindNounAndVerb(ref List<int> program, int target = 19690720)
+        {
+            var originalProgram = CopyIntProgram(in program);
+            var foundNoun = 0;
+            var foundVerb = 0;
+            bool foundNounAndVerb = false;
+            for (int noun = 0; noun <= 99 && !foundNounAndVerb; noun++)
+            {
+                for (int verb = 0; verb <= 99 && !foundNounAndVerb; verb++)
+                {
+                    SetNounAndVerb(ref program, noun, verb);
+                    ProcessIntCodeProgram(ref program);
+                    if (program[0] == target)
+                    {
+                        foundNounAndVerb = true;
+                        foundNoun = noun;
+                        foundVerb = verb;
+                    }
+                    program = CopyIntProgram(in originalProgram);
+                }
+            }
+            return foundNounAndVerb ? Tuple.Create(foundNoun, foundVerb) : null;
+        }
+
+        static List<int> CopyIntProgram(in List<int> program)
+        {
+             var newProgram = new List<int>();
+             foreach(var code in program)
+             {
+                 newProgram.Add(code);
+             }
+
+             return newProgram;
         }
     }
 }
